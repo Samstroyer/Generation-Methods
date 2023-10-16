@@ -4,6 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/*
+    This file is for creating rouge-like dungeon creation.
+    This is not finalised but is a basic, just a proof of concept for me that I can make it :)
+*/
+
 typedef enum TILE_TYPE
 {
     EMPTY,
@@ -32,7 +37,7 @@ typedef struct Tile
 int main()
 {
     SetTargetFPS(8);
-    InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Tiles - procedural");
+    InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Rouge Dungeons - procedural");
 
     long tile_amount = (WINDOW_WIDTH / TILE_SIZE) * (WINDOW_HEIGHT / TILE_SIZE);
 
