@@ -24,7 +24,7 @@ typedef struct ValueRange
 #define COLOR_TILE_SIZE (char)5
 #define MAP_SIZE (char)20
 #define MAP_TILE_VALUE_RANGE \
-    (ValueRange) { .min = 0, .max = 5 }
+    (ValueRange) { .min = 0, .max = 9 }
 
 int GetValueFromMap(double x, double y, int map[MAP_SIZE][MAP_SIZE])
 {
@@ -40,24 +40,24 @@ int GetValueFromMap(double x, double y, int map[MAP_SIZE][MAP_SIZE])
     if (index_x != move_towards_index_x)
     {
         value += Lerp(value, map[move_towards_index_x][index_y], x - index_x);
-        value /= 2;
     }
-    // else if (index_y != 0)
-    // {
-    //     value += Lerp(value, map[index_x][index_y - 1], y - index_y);
-    //     value /= 2;
-    // }
+    else
+    {
+        int new = index_x - 1 < 0 ? MAP_SIZE - 1 : index_x - 1;
+        value += map[new][index_y];
+    }
+    value /= 2;
 
     if (index_y != move_towards_index_y)
     {
         value += Lerp(value, map[index_x][move_towards_index_y], y - index_y);
-        value /= 2;
     }
-    // else if (index_x != 0)
-    // {
-    //     value += Lerp(value, map[index_x - 1][index_y], x - index_x);
-    //     value /= 2;
-    // }
+    else
+    {
+        int new = index_y - 1 < 0 ? MAP_SIZE - 1 : index_y - 1;
+        value += map[index_x][new];
+    }
+    value /= 2;
 
     if (index_x != move_towards_index_x && index_y != move_towards_index_y)
     {
@@ -66,8 +66,6 @@ int GetValueFromMap(double x, double y, int map[MAP_SIZE][MAP_SIZE])
     }
 
     return value;
-
-    // return floor(Lerp(map[index_x][index_y], map[move_towards_index_x][move_towards_index_y], x - index_x));
 }
 
 int main()
@@ -110,13 +108,13 @@ int main()
         }
 
         // Shows all map values
-        for (int y = 0; y < MAP_SIZE; y++)
-        {
-            for (int x = 0; x < MAP_SIZE; x++)
-            {
-                DrawText(TextFormat("%i", map[x][y]), MAP_SIZE / 2 + x * 1.5 * WINDOW_WIDTH / MAP_SIZE, MAP_SIZE / 2 + y * 1.5 * WINDOW_WIDTH / MAP_SIZE, 20, GREEN);
-            }
-        }
+        // for (int y = 0; y < MAP_SIZE; y++)
+        // {
+        //     for (int x = 0; x < MAP_SIZE; x++)
+        //     {
+        //         DrawText(TextFormat("%i", map[x][y]), x * WINDOW_WIDTH / MAP_SIZE, y * WINDOW_WIDTH / MAP_SIZE, 20, GREEN);
+        //     }
+        // }
 
         EndDrawing();
     }

@@ -29,14 +29,14 @@ typedef struct Tile
 
 #define WINDOW_WIDTH (short)800
 #define WINDOW_HEIGHT (short)800
-#define TILE_SIZE (char)20
+#define TILE_SIZE (char)10
 #define ROOM_MIN_SIZE (char)5
 #define ROOM_MAX_SIZE (char)11
-#define ROOMS_MAX (char)5
+#define ROOMS_MAX (char)10
 
 int main()
 {
-    SetTargetFPS(8);
+    SetTargetFPS(1);
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Rouge Dungeons - procedural");
 
     long tile_amount = (WINDOW_WIDTH / TILE_SIZE) * (WINDOW_HEIGHT / TILE_SIZE);
