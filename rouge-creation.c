@@ -36,7 +36,7 @@ typedef struct Tile
 
 int main()
 {
-    SetTargetFPS(1);
+    SetTargetFPS(5);
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Rouge Dungeons - procedural");
 
     long tile_amount = (WINDOW_WIDTH / TILE_SIZE) * (WINDOW_HEIGHT / TILE_SIZE);
@@ -133,7 +133,7 @@ int main()
                 Vector2 endPos = room_positions[i + 1];
                 Vector2 pathVectors = Vector2Subtract(startPos, endPos);
 
-                printf("\n%f,%f", pathVectors.x, pathVectors.y);
+                printf("Have to create path: \n%f,%f", pathVectors.x, pathVectors.y);
                 // pathVectors = Vector2Divide(pathVectors, (Vector2){10, 10});
 
                 for (int x = 0; x < abs(pathVectors.x); x++)
