@@ -18,7 +18,6 @@ Vector2 directions[4] = {
 
 int main()
 {
-    // SetTargetFPS(500);
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Drunkards walk - Procedural");
 
     Tile map[WINDOW_WIDTH / TILE_SIZE][WINDOW_HEIGHT / TILE_SIZE];
@@ -42,14 +41,14 @@ int main()
     while (!WindowShouldClose())
     {
         BeginDrawing();
-        ClearBackground(GREEN);
 
+        ClearBackground(BLUE);
         for (int y = 0; y < WINDOW_WIDTH / TILE_SIZE; y++)
         {
             for (int x = 0; x < WINDOW_HEIGHT / TILE_SIZE; x++)
             {
                 DrawRectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, (Color){100, 100, 0, 255 * map[x][y].visited});
-                // DrawRectangleLines(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, BLACK);
+                DrawRectangleLines(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, BLACK);
             }
         }
 
