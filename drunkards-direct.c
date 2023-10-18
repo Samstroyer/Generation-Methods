@@ -10,6 +10,12 @@ typedef struct Tile
     bool visited;
 } Tile;
 
+Vector2 directions[4] = {
+    (Vector2){1, 0},
+    (Vector2){0, 1},
+    (Vector2){-1, 0},
+    (Vector2){0, -1}};
+
 int main()
 {
     SetTargetFPS(1);
@@ -28,7 +34,7 @@ int main()
     short steps = 0;
     short steps_max = 50;
     short used_drunkards = 0;
-    short amount_of_drunkards = 100;
+    int amount_of_drunkards = 50000;
 
     while (used_drunkards < amount_of_drunkards)
     {
@@ -37,21 +43,7 @@ int main()
         {
             map[(int)index.x][(int)index.y].visited = true;
 
-            Vector2 random_step;
-            if (GetRandomValue(1, 2) < 2)
-            {
-                // Move horizontally
-                random_step.x = GetRandomValue(1, 2) < 2 ? -1 : 1;
-                random_step.y = 0;
-            }
-            else
-            {
-                // Move vertically
-                random_step.y = GetRandomValue(1, 2) < 2 ? -1 : 1;
-                random_step.x = 0;
-            }
-
-            index = Vector2Add(index, random_step);
+            index = Vector2Add(index, directions[GetRandomValue(0, 3)]);
 
             if (index.x >= WINDOW_WIDTH / TILE_SIZE)
             {
