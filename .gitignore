@@ -2,4 +2,5 @@
 .vscode
 shader.c
 main.exe
-program
+main
+program.*
