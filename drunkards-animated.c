@@ -35,9 +35,9 @@ int main()
 
     Vector2 index = (Vector2){WINDOW_WIDTH / TILE_SIZE / 2, WINDOW_HEIGHT / TILE_SIZE / 2};
     short steps = 0;
-    short steps_max = 500;
+    short steps_max = 1000;
     short used_drunkards = 0;
-    short amount_of_drunkards = 10;
+    short amount_of_drunkards = 2;
 
     while (!WindowShouldClose())
     {

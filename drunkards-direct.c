@@ -18,7 +18,6 @@ Vector2 directions[4] = {
 
 int main()
 {
-    SetTargetFPS(1);
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Drunkards walk - Procedural");
 
     Tile map[WINDOW_WIDTH / TILE_SIZE][WINDOW_HEIGHT / TILE_SIZE];
@@ -31,10 +30,11 @@ int main()
         }
     }
 
-    short steps = 0;
-    short steps_max = 50;
-    short used_drunkards = 0;
-    int amount_of_drunkards = 50000;
+    long steps = 0;
+    long steps_max = 100;
+    long used_drunkards = 0;
+    // Broooo, I was able to make this 100 M walkards, took like 1 min to load but worked!
+    long amount_of_drunkards = 10000;
 
     while (used_drunkards < amount_of_drunkards)
     {
