@@ -34,6 +34,7 @@ Char2 offsets[8] = {
 int main()
 {
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Cellular automata - Procedural");
+    SetTargetFPS(2);
 
     bool new_map[TILES_WIDTH][TILES_HEIGHT];
     bool map[TILES_WIDTH][TILES_HEIGHT];
@@ -67,7 +68,7 @@ int main()
         {
             for (int y = 0; y < TILES_HEIGHT; y++)
             {
-                char neighboor_count = 0;
+                char neighboor_count = map[x][y];
                 for (int i = 0; i < 9; i++)
                 {
                     int index_x = (x + offsets[i].x + 80) % TILES_WIDTH;
@@ -76,24 +77,13 @@ int main()
                     neighboor_count += map[index_x][index_y];
                 }
 
-                if (map[x][y] == false && neighboor_count == 3)
+                if (neighboor_count < 5)
                 {
-                    new_map[x][y] = true;
+                    new_map[x][y] = false;
                 }
                 else
                 {
-                    if (neighboor_count < 2)
-                    {
-                        new_map[x][y] = false;
-                    }
-                    else if (neighboor_count < 4)
-                    {
-                        new_map[x][y] = true;
-                    }
-                    else
-                    {
-                        new_map[x][y] = false;
-                    }
+                    new_map[x][y] = true;
                 }
             }
         }
