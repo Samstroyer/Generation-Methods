@@ -31,10 +31,10 @@ int main()
     }
 
     long steps = 0;
-    long steps_max = 100;
+    long steps_max = 500;
     long used_drunkards = 0;
     // Broooo, I was able to make this 100 M walkards, took like 1 min to load but worked!
-    long amount_of_drunkards = 1000;
+    long amount_of_drunkards = 3;
 
     while (used_drunkards < amount_of_drunkards)
     {

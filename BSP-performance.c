@@ -4,11 +4,11 @@
 
 #define WINDOW_WIDTH (short)800
 #define WINDOW_HEIGHT (short)800
-#define DEPTH (int)6 // all time record 31
+#define DEPTH (int)12 // all time record 30
 
-int PowerOf(int base, int exp)
+long PowerOf(int base, int exp)
 {
-    int result = 1;
+    long result = 1;
 
     for (int i = 0; i < exp; i++)
     {
@@ -27,9 +27,9 @@ typedef struct shortRec
 } shortRec;
 
 shortRec *leaf_arr;
-int index = 0;
+long index = 0;
 
-void GenerateRooms(int depth, shortRec dividing_room)
+void GenerateRooms(long depth, shortRec dividing_room)
 {
     if (depth == DEPTH)
     {
@@ -65,11 +65,13 @@ void GenerateRooms(int depth, shortRec dividing_room)
 
 int main()
 {
-    leaf_arr = calloc(PowerOf(2, DEPTH), sizeof(shortRec));
+    leaf_arr = malloc(sizeof(shortRec) * PowerOf(2, DEPTH)); // calloc(PowerOf(2, DEPTH), sizeof(shortRec));
 
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "BSP - Procedural");
 
     GenerateRooms(0, (shortRec){0, 0, WINDOW_WIDTH, WINDOW_HEIGHT});
+    // GenerateRooms(0, (shortRec){0, 0, WINDOW_WIDTH / 2, WINDOW_HEIGHT});
+    // GenerateRooms(0, (shortRec){WINDOW_WIDTH / 2, 0, WINDOW_WIDTH / 2, WINDOW_HEIGHT});
 
     while (!WindowShouldClose())
     {
@@ -77,11 +79,11 @@ int main()
 
         ClearBackground(WHITE);
 
-        for (int i = 0; i < PowerOf(2, DEPTH); i++)
-        {
-            DrawRectangle(leaf_arr[i].x, leaf_arr[i].y, leaf_arr[i].w, leaf_arr[i].h, RED);
-            DrawRectangleLines(leaf_arr[i].x, leaf_arr[i].y, leaf_arr[i].w, leaf_arr[i].h, (Color){0, 0, 0, 40});
-        }
+        // for (int i = 0; i < PowerOf(2, DEPTH); i++)
+        // {
+        //     DrawRectangle(leaf_arr[i].x, leaf_arr[i].y, leaf_arr[i].w, leaf_arr[i].h, RED);
+        //     DrawRectangleLines(leaf_arr[i].x, leaf_arr[i].y, leaf_arr[i].w, leaf_arr[i].h, (Color){0, 0, 0, 40});
+        // }
 
         DrawFPS(10, 10);
 

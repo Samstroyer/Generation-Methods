@@ -29,10 +29,10 @@ typedef struct Tile
 
 #define WINDOW_WIDTH (short)800
 #define WINDOW_HEIGHT (short)800
-#define TILE_SIZE (char)10
+#define TILE_SIZE (char)20
 #define ROOM_MIN_SIZE (char)5
 #define ROOM_MAX_SIZE (char)11
-#define ROOMS_MAX (char)10
+#define ROOMS_MAX (char)5
 
 int main()
 {
@@ -64,13 +64,8 @@ int main()
             for (int x = 0; x < WINDOW_WIDTH / TILE_SIZE; x++)
             {
                 DrawRectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, colors[map[x + (y * WINDOW_WIDTH / TILE_SIZE)].type]);
-                // DrawRectangleLines(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, BLACK);
+                DrawRectangleLines(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, BLACK);
             }
-        }
-
-        for (int i = 0; i < rooms_placed; i++)
-        {
-            DrawCircle(room_positions[i].x * TILE_SIZE, room_positions[i].y * TILE_SIZE, 5, colors[i]);
         }
 
         if (rooms_placed < ROOMS_MAX)
