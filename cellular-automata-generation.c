@@ -30,11 +30,12 @@ Char2 offsets[8] = {
 #define TILE_SIZE (short)10
 #define TILES_HEIGHT (WINDOW_HEIGHT / TILE_SIZE)
 #define TILES_WIDTH (WINDOW_WIDTH / TILE_SIZE)
+#define CHANCE (unsigned char)45
 
 int main()
 {
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Cellular automata - Procedural");
-    SetTargetFPS(2);
+    SetTargetFPS(3);
 
     bool new_map[TILES_WIDTH][TILES_HEIGHT];
     bool map[TILES_WIDTH][TILES_HEIGHT];
@@ -43,7 +44,7 @@ int main()
     {
         for (int y = 0; y < TILES_HEIGHT; y++)
         {
-            map[x][y] = GetRandomValue(0, 1);
+            map[x][y] = GetRandomValue(0, 100) <= CHANCE ? 1 : 0;
             new_map[x][y] = map[x][y];
         }
     }

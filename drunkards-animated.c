@@ -41,14 +41,14 @@ int main()
     while (!WindowShouldClose())
     {
         BeginDrawing();
+        ClearBackground(BLACK);
 
-        ClearBackground(BLUE);
         for (int y = 0; y < WINDOW_WIDTH / TILE_SIZE; y++)
         {
             for (int x = 0; x < WINDOW_HEIGHT / TILE_SIZE; x++)
             {
                 DrawRectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, (Color){100, 100, 0, 255 * map[x][y].visited});
-                DrawRectangleLines(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, BLACK);
+                // DrawRectangleLines(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, BLACK);
             }
         }
 

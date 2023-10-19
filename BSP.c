@@ -3,13 +3,7 @@
 
 #define WINDOW_WIDTH (short)800
 #define WINDOW_HEIGHT (short)800
-#define DEPTH (int)4 // Make a power of 2 because binary
-
-typedef struct Branch
-{
-    Rectangle rec;
-    struct Branch *branches[2];
-} Branch;
+#define DEPTH (int)6
 
 int PowerOf(int base, int exp)
 {
@@ -23,11 +17,60 @@ int PowerOf(int base, int exp)
     return result;
 }
 
+Rectangle *leaf_arr;
+int index = 0;
+
+void GenerateRooms(int depth, Rectangle dividing_room)
+{
+    if (depth == DEPTH)
+    {
+        leaf_arr[index] = dividing_room;
+        index++;
+        return;
+    }
+    else
+    {
+        if (GetRandomValue(0, 1) < 1)
+        {
+            Rectangle r1 = (Rectangle){dividing_room.x, dividing_room.y, dividing_room.width / 2, dividing_room.height};
+            Rectangle r2 = (Rectangle){dividing_room.x + dividing_room.width / 2, dividing_room.y, dividing_room.width / 2, dividing_room.height};
+            GenerateRooms(depth + 1, r1);
+            GenerateRooms(depth + 1, r2);
+        }
+        else
+        {
+            Rectangle r1 = (Rectangle){dividing_room.x, dividing_room.y, dividing_room.width, dividing_room.height / 2};
+            Rectangle r2 = (Rectangle){dividing_room.x, dividing_room.y + dividing_room.height / 2, dividing_room.width, dividing_room.height / 2};
+            GenerateRooms(depth + 1, r1);
+            GenerateRooms(depth + 1, r2);
+        }
+        return;
+    }
+}
+
 int main()
 {
-    Branch rooms[PowerOf(2, DEPTH)];
+    Rectangle leafs[PowerOf(2, DEPTH)];
+    leaf_arr = leafs;
 
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "BSP - Procedural");
+
+    GenerateRooms(0, (Rectangle){0, 0, WINDOW_WIDTH, WINDOW_HEIGHT});
+
+    while (!WindowShouldClose())
+    {
+        BeginDrawing();
+
+        ClearBackground(WHITE);
+
+        for (int i = 0; i < PowerOf(2, DEPTH); i++)
+        {
+            DrawRectangleRec(leafs[i], RED);
+            DrawRectangleLinesEx(leafs[i], 2, (Color){0, 0, 0, 30});
+        }
+
+        EndDrawing();
+    }
 
     return 0;
 }

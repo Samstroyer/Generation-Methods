@@ -33,8 +33,6 @@ int GetValueFromMap(double x, double y, int map[MAP_SIZE][MAP_SIZE])
     int move_towards_index_x = (int)ceil(x); //% MAP_SIZE;
     int move_towards_index_y = (int)ceil(y); //% MAP_SIZE;
 
-    printf("x : %i, y : %i, mx : %i, my : %i\n", index_x, index_y, move_towards_index_x, move_towards_index_y);
-
     int value = map[index_x][index_y]; // = floor(Lerp(map[index_x][index_y], map[move_towards_index_x][move_towards_index_y], x - index_x));
 
     if (index_x != move_towards_index_x)
