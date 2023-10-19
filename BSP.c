@@ -3,7 +3,7 @@
 
 #define WINDOW_WIDTH (short)800
 #define WINDOW_HEIGHT (short)800
-#define DEPTH (int)6
+#define DEPTH (int)16
 
 int PowerOf(int base, int exp)
 {
@@ -24,25 +24,35 @@ void GenerateRooms(int depth, Rectangle dividing_room)
 {
     if (depth == DEPTH)
     {
+        // Save leaf
         leaf_arr[index] = dividing_room;
         index++;
         return;
     }
     else
     {
+        // Decide vertical or horizontal
         if (GetRandomValue(0, 1) < 1)
         {
-            Rectangle r1 = (Rectangle){dividing_room.x, dividing_room.y, dividing_room.width / 2, dividing_room.height};
-            Rectangle r2 = (Rectangle){dividing_room.x + dividing_room.width / 2, dividing_room.y, dividing_room.width / 2, dividing_room.height};
-            GenerateRooms(depth + 1, r1);
-            GenerateRooms(depth + 1, r2);
+            {
+                Rectangle r1 = (Rectangle){dividing_room.x, dividing_room.y, dividing_room.width / 2, dividing_room.height};
+                GenerateRooms(depth + 1, r1);
+            }
+            {
+                Rectangle r2 = (Rectangle){dividing_room.x + dividing_room.width / 2, dividing_room.y, dividing_room.width / 2, dividing_room.height};
+                GenerateRooms(depth + 1, r2);
+            }
         }
         else
         {
-            Rectangle r1 = (Rectangle){dividing_room.x, dividing_room.y, dividing_room.width, dividing_room.height / 2};
-            Rectangle r2 = (Rectangle){dividing_room.x, dividing_room.y + dividing_room.height / 2, dividing_room.width, dividing_room.height / 2};
-            GenerateRooms(depth + 1, r1);
-            GenerateRooms(depth + 1, r2);
+            {
+                Rectangle r1 = (Rectangle){dividing_room.x, dividing_room.y, dividing_room.width, dividing_room.height / 2};
+                GenerateRooms(depth + 1, r1);
+            }
+            {
+                Rectangle r2 = (Rectangle){dividing_room.x, dividing_room.y + dividing_room.height / 2, dividing_room.width, dividing_room.height / 2};
+                GenerateRooms(depth + 1, r2);
+            }
         }
         return;
     }
