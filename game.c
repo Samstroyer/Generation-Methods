@@ -64,14 +64,44 @@ typedef struct Player
     signed char health;
 } Player;
 
-void GenerateOre(Tile map[ROOM_SIZE][ROOM_SIZE], char ore_pre_hundred)
+void GenerateOre(Tile map[ROOM_SIZE][ROOM_SIZE], int amount_of_patches, int walks, int steps)
 {
-    for (int x = 0; x < ROOM_SIZE; x++)
+    Vector2 directions[4] = {
+        (Vector2){-1, 0}, // left
+        (Vector2){1, 0},  // right
+        (Vector2){0, -1}, // up
+        (Vector2){0, 1},  // down
+    };
+
+    int point_x;
+    int point_y;
+
+    // p for patches
+    for (int p = 0; p < amount_of_patches; p++)
     {
-        for (int y = 0; y < ROOM_SIZE; y++)
+        do
         {
-            map[x][y] = y < 15 ? tiles_info[TILE_AIR] : y < 18 ? tiles_info[TILE_FG_DIRT]
-                                                               : tiles_info[TILE_FG_STONE];
+            point_x = GetRandomValue(0, ROOM_SIZE - 1);
+            point_y = GetRandomValue(25, ROOM_SIZE - 1);
+        } while (map[point_x][point_y].hit_points > 0);
+
+        // d for drunkard
+        for (int d = 0; d < walks; d++)
+        {
+            // s for steps
+            for (int s = 0; s < steps; s++)
+            {
+                map[point_x][point_y] = tiles_info[TILE_FG_IRON];
+
+                char index = GetRandomValue(0, 4);
+                point_x += directions[index].x;
+                point_y += directions[index].y;
+
+                if (point_x < 0 || point_x >= ROOM_SIZE)
+                    point_x -= directions[index].x;
+                if (point_y < 15 || point_x >= ROOM_SIZE)
+                    point_y -= directions[index].y;
+            }
         }
     }
 }
@@ -167,11 +197,16 @@ void MapGenerator(Tile map[ROOM_SIZE][ROOM_SIZE], int difficulty)
     }
 
     CarveTunnels(map, 5, 48);
+    GenerateOre(map, 100, 2, 3);
 }
 
 int main()
 {
     Player p = (Player){125 * TILE_SIZE, 12 * TILE_SIZE, 100};
+
+    {
+        SetRandomSeed(&p);
+    }
 
     Tile map[ROOM_SIZE][ROOM_SIZE];
     MapGenerator(map, 1);
@@ -181,7 +216,7 @@ int main()
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Game, with procedural!");
     SetTargetFPS(500);
 
-    Rectangle player_hitbox = (Rectangle){p.x - PLAYER_RADIUS, p.y - PLAYER_RADIUS, TILE_SIZE, TILE_SIZE};
+    Rectangle player_hitbox = (Rectangle){p.x - PLAYER_RADIUS * 0.45, p.y - PLAYER_RADIUS * 0.45, TILE_SIZE * 0.9, TILE_SIZE * 0.9};
     while (!WindowShouldClose())
     {
         // Input for movement
@@ -221,6 +256,8 @@ int main()
                 }
             }
         }
+
+        // Unhindered movement
         if (can_move_current)
         {
             p.x += movement.x;
@@ -228,10 +265,12 @@ int main()
         }
         else
         {
+            // Hindered movement y
             if (can_move_x)
             {
                 p.x += movement.x;
             }
+            // Hindered movement x
             if (can_move_y)
             {
                 p.y += movement.y;
@@ -239,7 +278,7 @@ int main()
         }
 
         // Update hitbox
-        player_hitbox = (Rectangle){p.x - PLAYER_RADIUS, p.y - PLAYER_RADIUS, TILE_SIZE, TILE_SIZE};
+        player_hitbox = (Rectangle){p.x - PLAYER_RADIUS * 0.45, p.y - PLAYER_RADIUS * 0.45, TILE_SIZE * 0.9, TILE_SIZE * 0.9};
 
         // Update the camera
         cam.target = (Vector2){p.x, p.y};
