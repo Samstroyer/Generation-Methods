@@ -5,7 +5,7 @@
 #define WINDOW_WIDTH (int)800
 #define WINDOW_HEIGHT (int)800
 #define ROOM_SIZE __UINT8_MAX__ // Room size is the size of the world - a room as it is "travel through"
-#define TILE_SIZE (int)40
+#define TILE_SIZE (int)30
 #define BASE_PLAYER_SPEED (int)200
 #define PLAYER_RADIUS (TILE_SIZE / 2)
 
@@ -21,6 +21,8 @@ typedef enum TILE_TYPE
 
     TILE_FG_IRON,
     TILE_BG_IRON,
+
+    TILE_PORTAL,
 
     TILE_COUNT,
 } TILE_TYPE;
@@ -39,6 +41,7 @@ Tile tiles_info[TILE_COUNT] = {
     (Tile){TILE_BG_STONE, 0},
     (Tile){TILE_FG_IRON, 3},
     (Tile){TILE_BG_IRON, 0},
+    (Tile){TILE_PORTAL, 0},
 };
 
 Color tile_colors[TILE_COUNT] = {
@@ -49,13 +52,20 @@ Color tile_colors[TILE_COUNT] = {
     DARKGRAY,
     LIGHTGRAY,
     DARKGRAY,
+    PURPLE,
 };
 
-typedef struct Char2
+typedef struct UnsignedChar2
 {
-    char x;
-    char y;
-} Char2;
+    unsigned char x;
+    unsigned char y;
+} UnsignedChar2;
+
+typedef struct SignedChar2
+{
+    signed char x;
+    signed char y;
+} SignedChar2;
 
 typedef struct Player
 {
@@ -77,40 +87,45 @@ typedef struct Inventory
 
 void GenerateOre(Tile map[ROOM_SIZE][ROOM_SIZE], int amount_of_patches, int walks, int steps)
 {
-    Char2 directions[4] = {
-        (Char2){-1, 0}, // left
-        (Char2){1, 0},  // right
-        (Char2){0, -1}, // up
-        (Char2){0, 1},  // down
+    SignedChar2 directions[4] = {
+        (SignedChar2){-1, 0}, // left
+        (SignedChar2){1, 0},  // right
+        (SignedChar2){0, -1}, // up
+        (SignedChar2){0, 1},  // down
     };
 
-    int point_x;
-    int point_y;
+    int start_x, point_x;
+    int start_y, point_y;
 
     // p for patches
     for (int p = 0; p < amount_of_patches; p++)
     {
+        // Get coordinates of patch
         do
         {
-            point_x = GetRandomValue(0, ROOM_SIZE - 1);
-            point_y = GetRandomValue(25, ROOM_SIZE - 1);
-        } while (map[point_x][point_y].hit_points < 0);
+            start_x = point_x = GetRandomValue(0, ROOM_SIZE - 1);
+            start_y = point_y = GetRandomValue(25, ROOM_SIZE - 1);
+        } while (map[start_x][start_y].hit_points < 0);
 
         // d for drunkard
         for (int d = 0; d < walks; d++)
         {
+            point_x = start_x;
+            point_y = start_y;
+
             // s for steps
             for (int s = 0; s < steps; s++)
             {
                 map[point_x][point_y] = tiles_info[TILE_FG_IRON];
 
-                char index = GetRandomValue(0, 4);
+                char index = GetRandomValue(0, 3);
+
                 point_x += directions[index].x;
                 point_y += directions[index].y;
 
                 if (point_x < 0 || point_x >= ROOM_SIZE)
                     point_x -= directions[index].x;
-                if (point_y < 15 || point_x >= ROOM_SIZE)
+                if (point_y < 15 || point_y >= ROOM_SIZE)
                     point_y -= directions[index].y;
             }
         }
@@ -122,15 +137,15 @@ void CarveTunnels(Tile map[ROOM_SIZE][ROOM_SIZE], int passes, char airiness)
     char y_offset = 15;
     char chance = airiness;
 
-    Char2 offsets[8] = {
-        (Char2){-1, -1},
-        (Char2){0, -1},
-        (Char2){1, -1},
-        (Char2){-1, 0},
-        (Char2){1, 0},
-        (Char2){-1, 1},
-        (Char2){0, 1},
-        (Char2){1, 1},
+    SignedChar2 offsets[8] = {
+        (SignedChar2){-1, -1},
+        (SignedChar2){0, -1},
+        (SignedChar2){1, -1},
+        (SignedChar2){-1, 0},
+        (SignedChar2){1, 0},
+        (SignedChar2){-1, 1},
+        (SignedChar2){0, 1},
+        (SignedChar2){1, 1},
     };
 
     // -15 because it is air!
@@ -208,8 +223,16 @@ void MapGenerator(Tile map[ROOM_SIZE][ROOM_SIZE], int difficulty)
     }
 
     CarveTunnels(map, 5, 48);
-    GenerateOre(map, 200, 2, 3);
+    GenerateOre(map, 200, 5, 4);
 }
+
+typedef enum DIRECTIONS
+{
+    LEFT = 0,
+    RIGHT = 1,
+    DOWN = 3,
+    UP = 2,
+} DIRECTIONS;
 
 int main()
 {
@@ -224,10 +247,12 @@ int main()
     // Create the map and generate the first one
     Tile map[ROOM_SIZE][ROOM_SIZE];
     MapGenerator(map, 1);
+    UnsignedChar2 portal_pos = (UnsignedChar2){GetRandomValue(0, ROOM_SIZE - 1), GetRandomValue(ROOM_SIZE - 50, ROOM_SIZE - 1)};
+    map[portal_pos.x][portal_pos.y] = tiles_info[TILE_PORTAL];
 
     // Init the camera
     Camera2D cam = (Camera2D){(Vector2){WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2}, (Vector2){p.x, p.y}, 0, 1};
-    bool show_map = false;
+    bool show_minimap = false;
     bool digging = false;
 
     // Initialize the window and cap at 500fps - dont need more!
@@ -237,11 +262,13 @@ int main()
     // Player hitbox is used in the game-loop
     Rectangle player_hitbox = (Rectangle){p.x - PLAYER_RADIUS * 0.45, p.y - PLAYER_RADIUS * 0.45, TILE_SIZE * 0.9, TILE_SIZE * 0.9};
     Vector2 player_directional_hitboxes[4] = {
-        (Vector2){p.x - 10, p.y + PLAYER_RADIUS * 0.45},                  // left
-        (Vector2){p.x - 8 + TILE_SIZE * 0.9, p.y + PLAYER_RADIUS * 0.45}, // right
-        (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 10},                  // up
-        (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 8 + TILE_SIZE * 0.9}, // down
+        (Vector2){p.x - 6 + TILE_SIZE * 0.9, p.y + PLAYER_RADIUS * 0.45}, // right
+        (Vector2){p.x - 8, p.y + PLAYER_RADIUS * 0.45},                   // left
+        (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 6 + TILE_SIZE * 0.9}, // down
+        (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 8},                   // up
     };
+
+    DIRECTIONS mining_dir = UP;
 
     while (!WindowShouldClose())
     {
@@ -250,16 +277,18 @@ int main()
         if (key != KEY_NULL)
         {
             if (key == KEY_M)
-                show_map = !show_map;
+                show_minimap = !show_minimap;
+            if (key >= KEY_RIGHT && key <= KEY_UP)
+                mining_dir = key - 262;
         }
 
         if (IsKeyDown(KEY_SPACE))
         {
             digging = true;
-            player_directional_hitboxes[0] = (Vector2){p.x - 10, p.y + PLAYER_RADIUS * 0.45};                  // left
-            player_directional_hitboxes[1] = (Vector2){p.x - 8 + TILE_SIZE * 0.9, p.y + PLAYER_RADIUS * 0.45}; // right
-            player_directional_hitboxes[2] = (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 10};                  // up
-            player_directional_hitboxes[3] = (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 8 + TILE_SIZE * 0.9}; // down
+            player_directional_hitboxes[0] = (Vector2){p.x - 6 + TILE_SIZE * 0.9, p.y + PLAYER_RADIUS * 0.45}; // right
+            player_directional_hitboxes[1] = (Vector2){p.x - 8, p.y + PLAYER_RADIUS * 0.45};                   // left
+            player_directional_hitboxes[2] = (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 6 + TILE_SIZE * 0.9}; // down
+            player_directional_hitboxes[3] = (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 8};                   // up
         }
         else
         {
@@ -292,9 +321,11 @@ int main()
 
                 if (digging)
                 {
-                    for (int i = 0; i < 4; i++)
+                    if (CheckCollisionPointRec(player_directional_hitboxes[mining_dir], block))
                     {
-                        player_directional_hitboxes[i];
+                        map[x][y].hit_points--; //-= GetFrameTime();
+                        if (map[x][y].hit_points <= 0)
+                            map[x][y].type += 1;
                     }
                 }
 
@@ -360,13 +391,19 @@ int main()
 
         // Draw the player
         DrawRectangleRec(player_hitbox, RED);
-
-        for (int i = 0; i < 4; i++)
-        {
-            DrawCircle(player_directional_hitboxes[i].x, player_directional_hitboxes[i].y, 4, BLACK);
-        }
+        // Draw mining pos
+        DrawCircle(player_directional_hitboxes[mining_dir].x, player_directional_hitboxes[mining_dir].y, 3, GREEN);
 
         EndMode2D();
+
+        if (show_minimap)
+        {
+            Vector2 player_world_to_map_pos = (Vector2){Remap(p.x, 0, ROOM_SIZE * TILE_SIZE, 0, 100), Remap(p.y, 0, ROOM_SIZE * TILE_SIZE, 0, 100)};
+            Vector2 portal_world_to_map_pos = (Vector2){Remap(portal_pos.x, 0, ROOM_SIZE - 1, 0, 100), Remap(portal_pos.y, 0, ROOM_SIZE - 1, 0, 100)};
+            DrawRectangle(WINDOW_WIDTH - 110, 10, 100, 100, (Color){255, 255, 255, 30});
+            DrawCircle(WINDOW_WIDTH - 110 + player_world_to_map_pos.x, 10 + player_world_to_map_pos.y, 5, (Color){255, 0, 0, 100});
+            DrawCircle(WINDOW_WIDTH - 110 + portal_world_to_map_pos.x, 10 + portal_world_to_map_pos.y, 5, (Color){255, 0, 255, 100});
+        }
 
         // Always the fps counter
         DrawFPS(10, 10);

@@ -9,20 +9,20 @@
     I at least use Moore's way
 */
 
-typedef struct Char2
+typedef struct SignedChar2
 {
     signed char x, y;
-} Char2;
+} SignedChar2;
 
-Char2 offsets[8] = {
-    (Char2){-1, -1},
-    (Char2){0, -1},
-    (Char2){1, -1},
-    (Char2){-1, 0},
-    (Char2){1, 0},
-    (Char2){-1, 1},
-    (Char2){0, 1},
-    (Char2){1, 1},
+SignedChar2 offsets[8] = {
+    (SignedChar2){-1, -1},
+    (SignedChar2){0, -1},
+    (SignedChar2){1, -1},
+    (SignedChar2){-1, 0},
+    (SignedChar2){1, 0},
+    (SignedChar2){-1, 1},
+    (SignedChar2){0, 1},
+    (SignedChar2){1, 1},
 };
 
 #define WINDOW_WIDTH (short)800
