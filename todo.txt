@@ -1,0 +1,10 @@
+small minimap
+inventory on keypress
+mining
+portals -> create new maps and respawn
+furnaces? / crafting?
+
+items? from treasures that are added randomly?
+enemies?
+health
+heat from distance to goal?
