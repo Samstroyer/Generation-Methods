@@ -28,7 +28,7 @@ typedef enum TILE_TYPE
 typedef struct Tile
 {
     TILE_TYPE type;
-    unsigned short hit_points;
+    float hit_points;
 } Tile;
 
 Tile tiles_info[TILE_COUNT] = {
@@ -42,7 +42,7 @@ Tile tiles_info[TILE_COUNT] = {
 };
 
 Color tile_colors[TILE_COUNT] = {
-    BLUE,
+    (Color){100, 100, 255, 255}, // own blue
     BROWN,
     DARKBROWN,
     GRAY,
@@ -64,13 +64,24 @@ typedef struct Player
     signed char health;
 } Player;
 
+typedef struct Slot
+{
+    TILE_TYPE type;
+    int amount;
+} Slot;
+
+typedef struct Inventory
+{
+    Slot slots[20];
+} Inventory;
+
 void GenerateOre(Tile map[ROOM_SIZE][ROOM_SIZE], int amount_of_patches, int walks, int steps)
 {
-    Vector2 directions[4] = {
-        (Vector2){-1, 0}, // left
-        (Vector2){1, 0},  // right
-        (Vector2){0, -1}, // up
-        (Vector2){0, 1},  // down
+    Char2 directions[4] = {
+        (Char2){-1, 0}, // left
+        (Char2){1, 0},  // right
+        (Char2){0, -1}, // up
+        (Char2){0, 1},  // down
     };
 
     int point_x;
@@ -83,7 +94,7 @@ void GenerateOre(Tile map[ROOM_SIZE][ROOM_SIZE], int amount_of_patches, int walk
         {
             point_x = GetRandomValue(0, ROOM_SIZE - 1);
             point_y = GetRandomValue(25, ROOM_SIZE - 1);
-        } while (map[point_x][point_y].hit_points > 0);
+        } while (map[point_x][point_y].hit_points < 0);
 
         // d for drunkard
         for (int d = 0; d < walks; d++)
@@ -143,7 +154,7 @@ void CarveTunnels(Tile map[ROOM_SIZE][ROOM_SIZE], int passes, char airiness)
             for (int x = 0; x < ROOM_SIZE; x++)
             {
                 char neighboor_count = cellular_map[x][y - y_offset];
-                for (int i = 0; i <= 8; i++)
+                for (int i = 0; i < 8; i++)
                 {
                     int index_x = (x + offsets[i].x);
                     int index_y = (y + offsets[i].y);
@@ -197,28 +208,64 @@ void MapGenerator(Tile map[ROOM_SIZE][ROOM_SIZE], int difficulty)
     }
 
     CarveTunnels(map, 5, 48);
-    GenerateOre(map, 100, 2, 3);
+    GenerateOre(map, 200, 2, 3);
 }
 
 int main()
 {
     Player p = (Player){125 * TILE_SIZE, 12 * TILE_SIZE, 100};
+    Inventory inventory;
 
     {
+        // Set random seed
         SetRandomSeed(&p);
     }
 
+    // Create the map and generate the first one
     Tile map[ROOM_SIZE][ROOM_SIZE];
     MapGenerator(map, 1);
 
+    // Init the camera
     Camera2D cam = (Camera2D){(Vector2){WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2}, (Vector2){p.x, p.y}, 0, 1};
+    bool show_map = false;
+    bool digging = false;
 
+    // Initialize the window and cap at 500fps - dont need more!
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Game, with procedural!");
     SetTargetFPS(500);
 
+    // Player hitbox is used in the game-loop
     Rectangle player_hitbox = (Rectangle){p.x - PLAYER_RADIUS * 0.45, p.y - PLAYER_RADIUS * 0.45, TILE_SIZE * 0.9, TILE_SIZE * 0.9};
+    Vector2 player_directional_hitboxes[4] = {
+        (Vector2){p.x - 10, p.y + PLAYER_RADIUS * 0.45},                  // left
+        (Vector2){p.x - 8 + TILE_SIZE * 0.9, p.y + PLAYER_RADIUS * 0.45}, // right
+        (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 10},                  // up
+        (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 8 + TILE_SIZE * 0.9}, // down
+    };
+
     while (!WindowShouldClose())
     {
+        // Random key input
+        KeyboardKey key = GetKeyPressed();
+        if (key != KEY_NULL)
+        {
+            if (key == KEY_M)
+                show_map = !show_map;
+        }
+
+        if (IsKeyDown(KEY_SPACE))
+        {
+            digging = true;
+            player_directional_hitboxes[0] = (Vector2){p.x - 10, p.y + PLAYER_RADIUS * 0.45};                  // left
+            player_directional_hitboxes[1] = (Vector2){p.x - 8 + TILE_SIZE * 0.9, p.y + PLAYER_RADIUS * 0.45}; // right
+            player_directional_hitboxes[2] = (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 10};                  // up
+            player_directional_hitboxes[3] = (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 8 + TILE_SIZE * 0.9}; // down
+        }
+        else
+        {
+            digging = false;
+        }
+
         // Input for movement
         Vector2 movement = (Vector2){0, 0};
         float speed = BASE_PLAYER_SPEED * GetFrameTime() * (IsKeyDown(KEY_LEFT_SHIFT) * 1 + 1);
@@ -242,6 +289,15 @@ int main()
                 if (cam.target.y - cam.offset.y / 4 > (y * TILE_SIZE) + TILE_SIZE || cam.target.y + cam.offset.y / 4 < y * TILE_SIZE)
                     continue;
                 Rectangle block = (Rectangle){x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE};
+
+                if (digging)
+                {
+                    for (int i = 0; i < 4; i++)
+                    {
+                        player_directional_hitboxes[i];
+                    }
+                }
+
                 if (CheckCollisionRecs((Rectangle){player_hitbox.x + movement.x, player_hitbox.y + movement.y, player_hitbox.width, player_hitbox.height}, block))
                 {
                     can_move_current = false;
@@ -283,9 +339,9 @@ int main()
         // Update the camera
         cam.target = (Vector2){p.x, p.y};
 
+        // Start the drawing loop
         BeginDrawing();
         BeginMode2D(cam);
-
         ClearBackground(WHITE);
 
         // Draw the map
@@ -302,10 +358,17 @@ int main()
             }
         }
 
+        // Draw the player
         DrawRectangleRec(player_hitbox, RED);
+
+        for (int i = 0; i < 4; i++)
+        {
+            DrawCircle(player_directional_hitboxes[i].x, player_directional_hitboxes[i].y, 4, BLACK);
+        }
 
         EndMode2D();
 
+        // Always the fps counter
         DrawFPS(10, 10);
         EndDrawing();
     }
