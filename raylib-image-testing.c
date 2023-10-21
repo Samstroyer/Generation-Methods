@@ -8,7 +8,7 @@ int main()
 {
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Image testing");
 
-    Image cells = GenImageCellular(200, 200, 50);
+    Image cells = GenImageCellular(200, 200, 20);
     Image checked = GenImageChecked(200, 200, 10, 10, RED, BLACK);
     Image white = GenImageWhiteNoise(200, 200, 0.5);
     Image gh = GenImageGradientH(200, 200, RED, BLUE);

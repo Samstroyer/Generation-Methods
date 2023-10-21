@@ -15,3 +15,5 @@ enemies?
 health
 
 heat from distance to goal?
+
+bps för extra loot

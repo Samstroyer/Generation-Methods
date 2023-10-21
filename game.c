@@ -1,4 +1,6 @@
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "raylib.h"
 #include "raymath.h"
 
@@ -8,6 +10,8 @@
 #define TILE_SIZE (int)30
 #define BASE_PLAYER_SPEED (int)200
 #define PLAYER_RADIUS (TILE_SIZE / 2)
+#define MAX_POPUPS (short)20
+#define POPUP_TIMER_SECONDS (unsigned char)2
 
 typedef enum TILE_TYPE
 {
@@ -76,13 +80,13 @@ typedef struct Player
 
 typedef struct Slot
 {
-    TILE_TYPE type;
-    int amount;
+    // TILE_TYPE type[TILE_COUNT];
+    int amount[TILE_COUNT];
 } Slot;
 
 typedef struct Inventory
 {
-    Slot slots[20];
+    Slot slots;
 } Inventory;
 
 void GenerateOre(Tile map[ROOM_SIZE][ROOM_SIZE], int amount_of_patches, int walks, int steps)
@@ -234,10 +238,38 @@ typedef enum DIRECTIONS
     UP = 2,
 } DIRECTIONS;
 
+typedef struct Popup
+{
+    float timer;
+    char *text;
+} Popup;
+
+unsigned short pop_up_index = 0;
+Popup *popups;
+
+void CreatePopup(char *text)
+{
+    popups[pop_up_index % MAX_POPUPS] = (Popup){
+        .timer = POPUP_TIMER_SECONDS,
+        .text = text};
+    pop_up_index++;
+}
+
+void DeletePopup(int index)
+{
+    popups[index].text = NULL;
+}
+
 int main()
 {
     Player p = (Player){125 * TILE_SIZE, 12 * TILE_SIZE, 100};
     Inventory inventory;
+
+    popups = malloc(sizeof(Popup) * MAX_POPUPS);
+    for (int i = 0; i < MAX_POPUPS; i++)
+    {
+        popups[i].text = NULL;
+    }
 
     {
         // Set random seed
@@ -262,9 +294,9 @@ int main()
     // Player hitbox is used in the game-loop
     Rectangle player_hitbox = (Rectangle){p.x - PLAYER_RADIUS * 0.45, p.y - PLAYER_RADIUS * 0.45, TILE_SIZE * 0.9, TILE_SIZE * 0.9};
     Vector2 player_directional_hitboxes[4] = {
-        (Vector2){p.x - 6 + TILE_SIZE * 0.9, p.y + PLAYER_RADIUS * 0.45}, // right
+        (Vector2){p.x - 5 + TILE_SIZE * 0.9, p.y + PLAYER_RADIUS * 0.45}, // right
         (Vector2){p.x - 8, p.y + PLAYER_RADIUS * 0.45},                   // left
-        (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 6 + TILE_SIZE * 0.9}, // down
+        (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 5 + TILE_SIZE * 0.9}, // down
         (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 8},                   // up
     };
 
@@ -285,9 +317,9 @@ int main()
         if (IsKeyDown(KEY_SPACE))
         {
             digging = true;
-            player_directional_hitboxes[0] = (Vector2){p.x - 6 + TILE_SIZE * 0.9, p.y + PLAYER_RADIUS * 0.45}; // right
+            player_directional_hitboxes[0] = (Vector2){p.x - 5 + TILE_SIZE * 0.9, p.y + PLAYER_RADIUS * 0.45}; // right
             player_directional_hitboxes[1] = (Vector2){p.x - 8, p.y + PLAYER_RADIUS * 0.45};                   // left
-            player_directional_hitboxes[2] = (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 6 + TILE_SIZE * 0.9}; // down
+            player_directional_hitboxes[2] = (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 5 + TILE_SIZE * 0.9}; // down
             player_directional_hitboxes[3] = (Vector2){p.x + PLAYER_RADIUS * 0.45, p.y - 8};                   // up
         }
         else
@@ -307,6 +339,7 @@ int main()
         bool can_move_x = true;
         bool can_move_y = true;
         bool can_move_current = true;
+        bool next_level = false;
         for (int x = 0; x < ROOM_SIZE; x++)
         {
             for (int y = 0; y < ROOM_SIZE; y++)
@@ -325,10 +358,13 @@ int main()
                     {
                         map[x][y].hit_points--; //-= GetFrameTime();
                         if (map[x][y].hit_points <= 0)
+                        {
+                            inventory.slots.amount[map[x][y].type]++;
                             map[x][y].type += 1;
+                            CreatePopup("Mined 1 stone");
+                        }
                     }
                 }
-
                 if (CheckCollisionRecs((Rectangle){player_hitbox.x + movement.x, player_hitbox.y + movement.y, player_hitbox.width, player_hitbox.height}, block))
                 {
                     can_move_current = false;
@@ -405,9 +441,36 @@ int main()
             DrawCircle(WINDOW_WIDTH - 110 + portal_world_to_map_pos.x, 10 + portal_world_to_map_pos.y, 5, (Color){255, 0, 255, 100});
         }
 
+        short offset_counter_y = 0;
+        for (int i = MAX_POPUPS - 1; i >= 0; i--)
+        {
+            if (popups[i].text != NULL)
+            {
+                Color c = (Color){0, 0, 0, Remap(popups[i].timer, POPUP_TIMER_SECONDS, 0, 255, 0)}; // this can be done better with alpha color
+                DrawText(popups[i].text, 400, 400 + offset_counter_y, 24, c);
+                popups[i].timer -= GetFrameTime();
+                if (popups[i].timer <= 0)
+                {
+                    DeletePopup(i);
+                }
+
+                offset_counter_y -= 18;
+            }
+        }
+
         // Always the fps counter
         DrawFPS(10, 10);
         EndDrawing();
+
+        if (CheckCollisionRecs(player_hitbox, (Rectangle){portal_pos.x * TILE_SIZE, portal_pos.y * TILE_SIZE, TILE_SIZE, TILE_SIZE}))
+        {
+            MapGenerator(map, 1);
+            p.x = (TILE_SIZE * ROOM_SIZE) / 2;
+            p.y = 10 * TILE_SIZE;
+            portal_pos = (UnsignedChar2){GetRandomValue(0, ROOM_SIZE - 1), GetRandomValue(ROOM_SIZE - 50, ROOM_SIZE - 1)};
+            map[portal_pos.x][portal_pos.y] = tiles_info[TILE_PORTAL];
+            printf("new\n");
+        }
     }
 
     return 0;
