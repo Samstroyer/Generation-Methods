@@ -13,6 +13,7 @@
 #define MAX_POPUPS (short)30 // Overkill, but this is so that you never can overflow the message size :)
 #define POPUP_TIMER_SECONDS (unsigned char)2
 
+#pragma region TILES
 typedef enum TILE_TYPE
 {
     TILE_AIR,
@@ -78,7 +79,108 @@ Color tile_colors[TILE_COUNT] = {
     DARKGRAY,
     PURPLE,
 };
+#pragma endregion TILES
 
+#pragma region UPGRADES
+typedef enum UPGRADE_TYPE
+{
+    UPGRADE_SPEED_MOVEMENT,
+    UPGRADE_SPEED_MINING,
+    UPGRADE_COUNT,
+} UPGRADE_TYPE;
+
+char upgrade_names[UPGRADE_COUNT][8] = {
+    "boots",
+    "pickaxe",
+};
+
+typedef struct Upgrade_Info
+{
+    char *material_name;
+    int multiplier; // This multiplies from base value of 1
+    UPGRADE_TYPE type;
+} Upgrade_Info;
+
+typedef struct Upgrade_Requirement_Info
+{
+    TILE_TYPE type;
+    int amount;
+} Upgrade_Requirement_Info;
+
+typedef enum UPGRADE_LEVELS
+{
+    LEVELS_DEFAULT,
+    LEVELS_ONE,
+    LEVELS_TWO,
+    LEVELS_THREE,
+    LEVELS_COUNT,
+} UPGRADE_LEVELS;
+
+Upgrade_Info mining_upgrades[LEVELS_COUNT] = {
+    (Upgrade_Info){
+        .material_name = "Default",
+        .type = UPGRADE_SPEED_MINING,
+        .multiplier = 1,
+    },
+    (Upgrade_Info){
+        .material_name = "Stone",
+        .type = UPGRADE_SPEED_MINING,
+        .multiplier = 1.2,
+    },
+    (Upgrade_Info){
+        .material_name = "Coal",
+        .type = UPGRADE_SPEED_MINING,
+        .multiplier = 1.4,
+    },
+    (Upgrade_Info){
+        .material_name = "Iron",
+        .type = UPGRADE_SPEED_MINING,
+        .multiplier = 1.5,
+    },
+};
+
+Upgrade_Requirement_Info mining_upgrades_requirements[LEVELS_COUNT] = {
+    (Upgrade_Requirement_Info){},
+    (Upgrade_Requirement_Info){.amount = 50, .type = TILE_FG_STONE},
+    (Upgrade_Requirement_Info){.amount = 20, .type = TILE_FG_COAL},
+    (Upgrade_Requirement_Info){.amount = 50, .type = TILE_FG_IRON},
+};
+
+Upgrade_Info movement_upgrades[LEVELS_COUNT] = {
+    (Upgrade_Info){
+        .material_name = "Default",
+        .type = UPGRADE_SPEED_MOVEMENT,
+        .multiplier = 1,
+    },
+    (Upgrade_Info){
+        .material_name = "Dirt",
+        .type = UPGRADE_SPEED_MOVEMENT,
+        .multiplier = 1.2,
+    },
+    (Upgrade_Info){
+        .material_name = "Stone",
+        .type = UPGRADE_SPEED_MOVEMENT,
+        .multiplier = 1.4,
+    },
+    (Upgrade_Info){
+        .material_name = "Iron",
+        .type = UPGRADE_SPEED_MOVEMENT,
+        .multiplier = 1.7,
+    },
+};
+
+Upgrade_Requirement_Info movement_upgrades_requirements[LEVELS_COUNT] = {
+    (Upgrade_Requirement_Info){},
+    (Upgrade_Requirement_Info){.amount = 30, .type = TILE_FG_DIRT},
+    (Upgrade_Requirement_Info){.amount = 50, .type = TILE_FG_STONE},
+    (Upgrade_Requirement_Info){.amount = 30, .type = TILE_FG_IRON},
+};
+
+UPGRADE_LEVELS pickaxe_level = LEVELS_DEFAULT;
+UPGRADE_LEVELS movement_level = LEVELS_DEFAULT;
+#pragma endregion UPGRADES
+
+#pragma region OWN_STRUCTS
 typedef struct UnsignedChar2
 {
     unsigned char x;
@@ -90,7 +192,9 @@ typedef struct SignedChar2
     signed char x;
     signed char y;
 } SignedChar2;
+#pragma endregion OWN_STRUCTS
 
+#pragma region PLAYER
 typedef struct Player
 {
     float x;
@@ -100,12 +204,24 @@ typedef struct Player
     short mining_multiplier;
 } Player;
 
+typedef enum DIRECTIONS
+{
+    LEFT = 0,
+    RIGHT = 1,
+    DOWN = 3,
+    UP = 2,
+} DIRECTIONS;
+
 typedef struct Inventory
 {
     TILE_TYPE type[TILE_COUNT];
     int amount[TILE_COUNT];
 } Inventory;
 
+double timer = 0;
+#pragma endregion PLAYER
+
+#pragma region MAP
 void GenerateOre(Tile map[ROOM_SIZE][ROOM_SIZE], int amount_of_patches, int walks, int steps, TILE_TYPE t)
 {
     SignedChar2 directions[4] = {
@@ -249,15 +365,9 @@ void MapGenerator(Tile map[ROOM_SIZE][ROOM_SIZE], int difficulty)
     GenerateOre(map, 150, 10, 3, TILE_FG_COAL);
     GenerateOre(map, 100, 4, 4, TILE_FG_IRON);
 }
+#pragma endregion MAP
 
-typedef enum DIRECTIONS
-{
-    LEFT = 0,
-    RIGHT = 1,
-    DOWN = 3,
-    UP = 2,
-} DIRECTIONS;
-
+#pragma region POPUP
 typedef struct Popup
 {
     float timer;
@@ -266,7 +376,6 @@ typedef struct Popup
 
 unsigned short pop_up_index = 0;
 Popup *popups;
-double timer = 0;
 
 void CreatePopup(TILE_TYPE type)
 {
@@ -275,6 +384,7 @@ void CreatePopup(TILE_TYPE type)
         .type = type};
     pop_up_index++;
 }
+#pragma endregion POPUP
 
 int main()
 {
