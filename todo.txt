@@ -1,9 +1,5 @@
 small minimap -> addon: göra ett texture på hela allting och sen reveal'a det allt eftersom man ser saker i viewporten? så att det är en explorable save-able karta? addon: göra så att man kan se bara en karta, inte minimap, i fullscreen?
 
-inventory on keypress
-
-portals -> create new maps and respawn
-
 furnaces? / crafting?
 
 ------------

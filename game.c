@@ -13,16 +13,6 @@
 #define MAX_POPUPS (short)30 // Overkill, but this is so that you never can overflow the message size :)
 #define POPUP_TIMER_SECONDS (unsigned char)2
 
-char block_names[7][6] = {
-    "air"
-    "dirt",
-    "dirt",
-    "stone",
-    "stone",
-    "iron",
-    "iron",
-};
-
 typedef enum TILE_TYPE
 {
     TILE_AIR,
@@ -36,10 +26,26 @@ typedef enum TILE_TYPE
     TILE_FG_IRON,
     TILE_BG_IRON,
 
+    TILE_FG_COAL,
+    TILE_BG_COAL,
+
     TILE_PORTAL,
 
     TILE_COUNT,
 } TILE_TYPE;
+
+char block_names[TILE_COUNT][6] = {
+    "air"
+    "dirt",
+    "dirt",
+    "stone",
+    "stone",
+    "iron",
+    "iron",
+    "coal",
+    "coal",
+    "portal",
+};
 
 typedef struct Tile
 {
@@ -55,6 +61,8 @@ Tile tiles_info[TILE_COUNT] = {
     (Tile){TILE_BG_STONE, 0},
     (Tile){TILE_FG_IRON, 3},
     (Tile){TILE_BG_IRON, 0},
+    (Tile){TILE_FG_COAL, 2},
+    (Tile){TILE_BG_COAL, 0},
     (Tile){TILE_PORTAL, 0},
 };
 
@@ -65,6 +73,8 @@ Color tile_colors[TILE_COUNT] = {
     GRAY,
     DARKGRAY,
     LIGHTGRAY,
+    DARKGRAY,
+    BLACK,
     DARKGRAY,
     PURPLE,
 };
@@ -85,7 +95,9 @@ typedef struct Player
 {
     float x;
     float y;
-    signed char health;
+    short health;
+    short speed_multiplier;
+    short mining_multiplier;
 } Player;
 
 typedef struct Inventory
@@ -94,7 +106,7 @@ typedef struct Inventory
     int amount[TILE_COUNT];
 } Inventory;
 
-void GenerateOre(Tile map[ROOM_SIZE][ROOM_SIZE], int amount_of_patches, int walks, int steps)
+void GenerateOre(Tile map[ROOM_SIZE][ROOM_SIZE], int amount_of_patches, int walks, int steps, TILE_TYPE t)
 {
     SignedChar2 directions[4] = {
         (SignedChar2){-1, 0}, // left
@@ -125,7 +137,7 @@ void GenerateOre(Tile map[ROOM_SIZE][ROOM_SIZE], int amount_of_patches, int walk
             // s for steps
             for (int s = 0; s < steps; s++)
             {
-                map[point_x][point_y] = tiles_info[TILE_FG_IRON];
+                map[point_x][point_y] = tiles_info[t];
 
                 char index = GetRandomValue(0, 3);
 
@@ -232,7 +244,10 @@ void MapGenerator(Tile map[ROOM_SIZE][ROOM_SIZE], int difficulty)
     }
 
     CarveTunnels(map, 5, 48);
-    GenerateOre(map, 200, 5, 4);
+
+    // Having the function for every ore makes it so that I can prioritise what should be on-top
+    GenerateOre(map, 150, 10, 3, TILE_FG_COAL);
+    GenerateOre(map, 100, 4, 4, TILE_FG_IRON);
 }
 
 typedef enum DIRECTIONS
@@ -251,6 +266,7 @@ typedef struct Popup
 
 unsigned short pop_up_index = 0;
 Popup *popups;
+double timer = 0;
 
 void CreatePopup(TILE_TYPE type)
 {
@@ -263,7 +279,7 @@ void CreatePopup(TILE_TYPE type)
 int main()
 {
     Player p = (Player){125 * TILE_SIZE, 12 * TILE_SIZE, 100};
-    Inventory inventory;
+    Inventory inventory = {};
 
     Popup p_arr[MAX_POPUPS];
     popups = p_arr; // malloc(sizeof(Popup) * MAX_POPUPS); // for speed at the moment
@@ -362,22 +378,44 @@ int main()
 
             DrawRectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, (Color){255, 255, 255, 150});
 
-            DrawRectangle(20, 200, WINDOW_WIDTH - 40, WINDOW_HEIGHT - 400, DARKGRAY);
+            // Start of inventory
+            // Not the nicest, but probably the best code...
+            // It cannot be a loop as I have different things I want to display and some I dont
+            // For example not showing portal, air and all the background blocks
+            // I could do a for loop and do +=2, but oh well
 
-            int x_offset = 0;
-            int y_offset = 0;
-            for (int i = 0; i < TILE_COUNT; i++)
-            {
-                DrawRectangle(35 + (x_offset % 10) * 220, 210 + (y_offset * 240), 70, 70, BLACK);
-                x_offset++;
-                if (i + 1 == TILE_COUNT / 2)
-                {
-                    x_offset = 0;
-                    y_offset++;
-                }
-            }
+            DrawRectangle(20, 200, WINDOW_WIDTH - 40, WINDOW_HEIGHT - 400, GRAY);
+            DrawRectangle(30, 210, 200, WINDOW_HEIGHT - 420, DARKGRAY);
 
+            // Dirt
+            DrawRectangle(35, 220, 180, 25, tile_colors[1]);
+            const char *dirt_text = TextFormat("%i dirt", inventory.amount[1]);
+            DrawText(dirt_text, 45, 222, 24, BLACK);
+
+            // Stone
+            DrawRectangle(35, 255, 180, 25, tile_colors[3]);
+            const char *stone_text = TextFormat("%i stone", inventory.amount[3]);
+            DrawText(stone_text, 45, 257, 24, BLACK);
+
+            // Iron
+            DrawRectangle(35, 290, 180, 25, tile_colors[5]);
+            const char *iron_text = TextFormat("%i iron", inventory.amount[5]);
+            DrawText(iron_text, 45, 292, 24, BLACK);
+
+            // Coal
+            DrawRectangle(35, 325, 180, 25, tile_colors[7]);
+            const char *coal_text = TextFormat("%i coal", inventory.amount[7]);
+            DrawText(coal_text, 45, 327, 24, WHITE);
+
+            // End of displaying inventory
+            // Still 500fps, not bad I have to say XD
+
+            // Draw fps
             DrawFPS(10, 10);
+
+            // Draw the time played
+            const char *time_played_text = TextFormat("You have played %.2f seconds", timer);
+            DrawText(time_played_text, (WINDOW_WIDTH / 2) - (MeasureText(time_played_text, 24) / 2), 100, 24, BLACK);
 
             EndDrawing();
             continue;
@@ -387,6 +425,9 @@ int main()
             END OF SHOW INVENTORY CODE
         */
 #pragma endregion show_inventory
+
+        // Add the time to the timer
+        timer += GetFrameTime();
 
         if (IsKeyDown(KEY_SPACE))
         {
@@ -522,9 +563,9 @@ int main()
             if (popups[i].timer > 0)
             {
                 Color c = (Color){0, 0, 0, Remap(popups[i].timer, POPUP_TIMER_SECONDS, 0, 200, 0) + 55}; // this can be done better with alpha color
-                DrawText(TextFormat("Mined 1 %s", block_names[popups[i].type]), 400, 400 + offset_counter_y, 24, c);
+                DrawText(TextFormat("Mined 1 %s", block_names[popups[i].type]), 10, WINDOW_HEIGHT - 28 - offset_counter_y, 24, c);
                 popups[i].timer -= GetFrameTime();
-                offset_counter_y -= 18;
+                offset_counter_y += 18;
 
                 if (popups[i].timer <= 0)
                 {
