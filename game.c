@@ -10,8 +10,18 @@
 #define TILE_SIZE (int)30
 #define BASE_PLAYER_SPEED (int)200
 #define PLAYER_RADIUS (TILE_SIZE / 2)
-#define MAX_POPUPS (short)20
+#define MAX_POPUPS (short)30 // Overkill, but this is so that you never can overflow the message size :)
 #define POPUP_TIMER_SECONDS (unsigned char)2
+
+char block_names[7][6] = {
+    "air"
+    "dirt",
+    "dirt",
+    "stone",
+    "stone",
+    "iron",
+    "iron",
+};
 
 typedef enum TILE_TYPE
 {
@@ -78,15 +88,10 @@ typedef struct Player
     signed char health;
 } Player;
 
-typedef struct Slot
-{
-    // TILE_TYPE type[TILE_COUNT];
-    int amount[TILE_COUNT];
-} Slot;
-
 typedef struct Inventory
 {
-    Slot slots;
+    TILE_TYPE type[TILE_COUNT];
+    int amount[TILE_COUNT];
 } Inventory;
 
 void GenerateOre(Tile map[ROOM_SIZE][ROOM_SIZE], int amount_of_patches, int walks, int steps)
@@ -241,23 +246,18 @@ typedef enum DIRECTIONS
 typedef struct Popup
 {
     float timer;
-    char *text;
+    TILE_TYPE type;
 } Popup;
 
 unsigned short pop_up_index = 0;
 Popup *popups;
 
-void CreatePopup(char *text)
+void CreatePopup(TILE_TYPE type)
 {
     popups[pop_up_index % MAX_POPUPS] = (Popup){
         .timer = POPUP_TIMER_SECONDS,
-        .text = text};
+        .type = type};
     pop_up_index++;
-}
-
-void DeletePopup(int index)
-{
-    popups[index].text = NULL;
 }
 
 int main()
@@ -265,10 +265,12 @@ int main()
     Player p = (Player){125 * TILE_SIZE, 12 * TILE_SIZE, 100};
     Inventory inventory;
 
-    popups = malloc(sizeof(Popup) * MAX_POPUPS);
+    Popup p_arr[MAX_POPUPS];
+    popups = p_arr; // malloc(sizeof(Popup) * MAX_POPUPS); // for speed at the moment
+
     for (int i = 0; i < MAX_POPUPS; i++)
     {
-        popups[i].text = NULL;
+        popups[i].timer = 0;
     }
 
     {
@@ -285,6 +287,7 @@ int main()
     // Init the camera
     Camera2D cam = (Camera2D){(Vector2){WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2}, (Vector2){p.x, p.y}, 0, 1};
     bool show_minimap = false;
+    bool show_inventory = false;
     bool digging = false;
 
     // Initialize the window and cap at 500fps - dont need more!
@@ -310,9 +313,80 @@ int main()
         {
             if (key == KEY_M)
                 show_minimap = !show_minimap;
+            if (key == KEY_I)
+                show_inventory = !show_inventory;
             if (key >= KEY_RIGHT && key <= KEY_UP)
                 mining_dir = key - 262;
         }
+
+#pragma region show_inventory
+        /*
+            START OF SHOW INVENTORY CODE
+         */
+        if (show_inventory)
+        {
+            BeginDrawing();
+
+            BeginMode2D(cam);
+            ClearBackground(WHITE);
+
+            // Draw the map
+            for (int x = 0; x < ROOM_SIZE; x++)
+            {
+                for (int y = 0; y < ROOM_SIZE; y++)
+                {
+                    if (cam.target.x - cam.offset.x > (x * TILE_SIZE) + TILE_SIZE || cam.target.x + cam.offset.x < x * TILE_SIZE)
+                        continue;
+                    if (cam.target.y - cam.offset.y > (y * TILE_SIZE) + TILE_SIZE || cam.target.y + cam.offset.y < y * TILE_SIZE)
+                        continue;
+                    DrawRectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, tile_colors[map[x][y].type]);
+                    DrawRectangleLines(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, (Color){0, 0, 0, 30});
+                }
+            }
+
+            // Draw the player
+            DrawRectangleRec(player_hitbox, RED);
+            // Draw mining pos
+            DrawCircle(player_directional_hitboxes[mining_dir].x, player_directional_hitboxes[mining_dir].y, 3, GREEN);
+
+            EndMode2D();
+
+            if (show_minimap)
+            {
+                Vector2 player_world_to_map_pos = (Vector2){Remap(p.x, 0, ROOM_SIZE * TILE_SIZE, 0, 100), Remap(p.y, 0, ROOM_SIZE * TILE_SIZE, 0, 100)};
+                Vector2 portal_world_to_map_pos = (Vector2){Remap(portal_pos.x, 0, ROOM_SIZE - 1, 0, 100), Remap(portal_pos.y, 0, ROOM_SIZE - 1, 0, 100)};
+                DrawRectangle(WINDOW_WIDTH - 110, 10, 100, 100, (Color){255, 255, 255, 30});
+                DrawCircle(WINDOW_WIDTH - 110 + player_world_to_map_pos.x, 10 + player_world_to_map_pos.y, 5, (Color){255, 0, 0, 100});
+                DrawCircle(WINDOW_WIDTH - 110 + portal_world_to_map_pos.x, 10 + portal_world_to_map_pos.y, 5, (Color){255, 0, 255, 100});
+            }
+
+            DrawRectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, (Color){255, 255, 255, 150});
+
+            DrawRectangle(20, 200, WINDOW_WIDTH - 40, WINDOW_HEIGHT - 400, DARKGRAY);
+
+            int x_offset = 0;
+            int y_offset = 0;
+            for (int i = 0; i < TILE_COUNT; i++)
+            {
+                DrawRectangle(35 + (x_offset % 10) * 220, 210 + (y_offset * 240), 70, 70, BLACK);
+                x_offset++;
+                if (i + 1 == TILE_COUNT / 2)
+                {
+                    x_offset = 0;
+                    y_offset++;
+                }
+            }
+
+            DrawFPS(10, 10);
+
+            EndDrawing();
+            continue;
+        }
+
+        /*
+            END OF SHOW INVENTORY CODE
+        */
+#pragma endregion show_inventory
 
         if (IsKeyDown(KEY_SPACE))
         {
@@ -359,9 +433,9 @@ int main()
                         map[x][y].hit_points--; //-= GetFrameTime();
                         if (map[x][y].hit_points <= 0)
                         {
-                            inventory.slots.amount[map[x][y].type]++;
+                            inventory.amount[map[x][y].type]++;
+                            CreatePopup(map[x][y].type);
                             map[x][y].type += 1;
-                            CreatePopup("Mined 1 stone");
                         }
                     }
                 }
@@ -406,6 +480,7 @@ int main()
         // Update the camera
         cam.target = (Vector2){p.x, p.y};
 
+#pragma region game_drawing
         // Start the drawing loop
         BeginDrawing();
         BeginMode2D(cam);
@@ -441,26 +516,27 @@ int main()
             DrawCircle(WINDOW_WIDTH - 110 + portal_world_to_map_pos.x, 10 + portal_world_to_map_pos.y, 5, (Color){255, 0, 255, 100});
         }
 
-        short offset_counter_y = 0;
+        short offset_counter_y = 0; // Can be a counter that multiplies with a constant
         for (int i = MAX_POPUPS - 1; i >= 0; i--)
         {
-            if (popups[i].text != NULL)
+            if (popups[i].timer > 0)
             {
-                Color c = (Color){0, 0, 0, Remap(popups[i].timer, POPUP_TIMER_SECONDS, 0, 255, 0)}; // this can be done better with alpha color
-                DrawText(popups[i].text, 400, 400 + offset_counter_y, 24, c);
+                Color c = (Color){0, 0, 0, Remap(popups[i].timer, POPUP_TIMER_SECONDS, 0, 200, 0) + 55}; // this can be done better with alpha color
+                DrawText(TextFormat("Mined 1 %s", block_names[popups[i].type]), 400, 400 + offset_counter_y, 24, c);
                 popups[i].timer -= GetFrameTime();
+                offset_counter_y -= 18;
+
                 if (popups[i].timer <= 0)
                 {
-                    DeletePopup(i);
+                    pop_up_index--;
                 }
-
-                offset_counter_y -= 18;
             }
         }
 
         // Always the fps counter
         DrawFPS(10, 10);
         EndDrawing();
+#pragma endregion game_drawing
 
         if (CheckCollisionRecs(player_hitbox, (Rectangle){portal_pos.x * TILE_SIZE, portal_pos.y * TILE_SIZE, TILE_SIZE, TILE_SIZE}))
         {
