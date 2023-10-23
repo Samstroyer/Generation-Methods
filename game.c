@@ -176,7 +176,7 @@ Upgrade_Requirement_Info movement_upgrades_requirements[LEVELS_COUNT] = {
     (Upgrade_Requirement_Info){.amount = 30, .type = TILE_FG_IRON},
 };
 
-UPGRADE_LEVELS pickaxe_level = LEVELS_DEFAULT;
+UPGRADE_LEVELS mining_level = LEVELS_DEFAULT;
 UPGRADE_LEVELS movement_level = LEVELS_DEFAULT;
 #pragma endregion UPGRADES
 
@@ -497,6 +497,7 @@ int main()
             DrawRectangle(20, 200, WINDOW_WIDTH - 40, WINDOW_HEIGHT - 400, GRAY);
             DrawRectangle(30, 210, 200, WINDOW_HEIGHT - 420, DARKGRAY);
 
+            // -- RESOURCE SECTION --
             // Dirt
             DrawRectangle(35, 220, 180, 25, tile_colors[1]);
             const char *dirt_text = TextFormat("%i dirt", inventory.amount[1]);
@@ -516,6 +517,67 @@ int main()
             DrawRectangle(35, 325, 180, 25, tile_colors[7]);
             const char *coal_text = TextFormat("%i coal", inventory.amount[7]);
             DrawText(coal_text, 45, 327, 24, WHITE);
+
+            // -- UPGRADE SECTION --
+            Rectangle upgrade_secton_info_rec = {WINDOW_HEIGHT / 2 + 100, 220, 210, 360};
+            Rectangle upgrade_secton_rec = {WINDOW_HEIGHT / 2 - 100, 210, 420, 380};
+            DrawRectangleRec(upgrade_secton_rec, DARKGRAY);
+
+            // Boot upgrade
+            Rectangle movement_upgrade_button = {WINDOW_HEIGHT / 2 - 95, 220, 180, 25};
+            DrawRectangleRec(movement_upgrade_button, (Color){60, 60, 60, 255});
+            const char *movement_text = TextFormat("Upgrade %s", upgrade_names[UPGRADE_SPEED_MOVEMENT]);
+            DrawText(movement_text, WINDOW_HEIGHT / 2 - 90, 222, 20, WHITE);
+
+            // Pickaxe upgrade
+            Rectangle pickaxe_upgrade_button = {WINDOW_HEIGHT / 2 - 95, 255, 180, 25};
+            DrawRectangleRec(pickaxe_upgrade_button, (Color){60, 60, 60, 255});
+            const char *mining_text = TextFormat("Upgrade %s", upgrade_names[UPGRADE_SPEED_MINING]);
+            DrawText(mining_text, WINDOW_HEIGHT / 2 - 90, 257, 20, WHITE);
+
+            // Display levels by default - will be overwritten by level info
+            DrawRectangleRec(upgrade_secton_info_rec, (Color){60, 60, 60, 255});
+            const char *pickaxe_upgrade_info_text = TextFormat("Current levels:\nPickaxe: %i\nBoots: %i", mining_level, movement_level);
+            DrawText(pickaxe_upgrade_info_text, WINDOW_HEIGHT / 2 + 105, 222, 20, WHITE);
+
+            // Check collisions
+            Vector2 mouse_pos = GetMousePosition();
+            if (CheckCollisionPointRec(mouse_pos, upgrade_secton_rec))
+            {
+                // Boot upgrade
+                if (CheckCollisionPointRec(mouse_pos, movement_upgrade_button))
+                {
+                    DrawRectangleRec(movement_upgrade_button, (Color){90, 90, 90, 255});
+                    DrawText(movement_text, WINDOW_HEIGHT / 2 - 90, 222, 20, WHITE);
+                    DrawRectangleRec(upgrade_secton_info_rec, (Color){60, 60, 60, 255});
+                    const char *boot_upgrade_info_text = TextFormat("Upgrade to level:%i\nCost:\n- %i %s", movement_level + 1, movement_upgrades_requirements[movement_level + 1].amount, movement_upgrades[movement_level + 1].material_name);
+                    DrawText(boot_upgrade_info_text, WINDOW_HEIGHT / 2 + 105, 222, 20, WHITE);
+                }
+
+                // Pickaxe upgrade
+                else if (CheckCollisionPointRec(mouse_pos, pickaxe_upgrade_button))
+                {
+                    DrawRectangleRec(pickaxe_upgrade_button, (Color){90, 90, 90, 255});
+                    DrawText(mining_text, WINDOW_HEIGHT / 2 - 90, 257, 20, WHITE);
+                    DrawRectangleRec(upgrade_secton_info_rec, (Color){60, 60, 60, 255});
+                    const char *pickaxe_upgrade_info_text = TextFormat("Upgrade to level:%i\nCost:\n- %i %s", mining_level + 1, mining_upgrades_requirements[mining_level + 1].amount, mining_upgrades[mining_level + 1].material_name);
+                    DrawText(pickaxe_upgrade_info_text, WINDOW_HEIGHT / 2 + 105, 222, 20, WHITE);
+                }
+
+                // Handle buying
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+                {
+                    // Handle boot upgrade
+                    if (CheckCollisionPointRec(mouse_pos, movement_upgrade_button))
+                    {
+                    }
+
+                    // Handle pickaxe upgrade
+                    if (CheckCollisionPointRec(mouse_pos, pickaxe_upgrade_button))
+                    {
+                    }
+                }
+            }
 
             // End of displaying inventory
             // Still 500fps, not bad I have to say XD
