@@ -176,8 +176,8 @@ Upgrade_Requirement_Info movement_upgrades_requirements[LEVELS_COUNT] = {
     (Upgrade_Requirement_Info){.amount = 30, .type = TILE_FG_IRON},
 };
 
-UPGRADE_LEVELS mining_level = LEVELS_DEFAULT;
-UPGRADE_LEVELS movement_level = LEVELS_DEFAULT;
+unsigned char mining_level = LEVELS_DEFAULT;
+unsigned char movement_level = LEVELS_DEFAULT;
 #pragma endregion UPGRADES
 
 #pragma region OWN_STRUCTS
@@ -545,7 +545,7 @@ int main()
             if (CheckCollisionPointRec(mouse_pos, upgrade_secton_rec))
             {
                 // Boot upgrade
-                if (CheckCollisionPointRec(mouse_pos, movement_upgrade_button))
+                if (movement_level < LEVELS_COUNT - 1 && CheckCollisionPointRec(mouse_pos, movement_upgrade_button))
                 {
                     DrawRectangleRec(movement_upgrade_button, (Color){90, 90, 90, 255});
                     DrawText(movement_text, WINDOW_HEIGHT / 2 - 90, 222, 20, WHITE);
@@ -557,11 +557,22 @@ int main()
                 // Pickaxe upgrade
                 else if (CheckCollisionPointRec(mouse_pos, pickaxe_upgrade_button))
                 {
-                    DrawRectangleRec(pickaxe_upgrade_button, (Color){90, 90, 90, 255});
-                    DrawText(mining_text, WINDOW_HEIGHT / 2 - 90, 257, 20, WHITE);
-                    DrawRectangleRec(upgrade_secton_info_rec, (Color){60, 60, 60, 255});
-                    const char *pickaxe_upgrade_info_text = TextFormat("Upgrade to level:%i\nCost:\n- %i %s", mining_level + 1, mining_upgrades_requirements[mining_level + 1].amount, mining_upgrades[mining_level + 1].material_name);
-                    DrawText(pickaxe_upgrade_info_text, WINDOW_HEIGHT / 2 + 105, 222, 20, WHITE);
+                    if (mining_level < LEVELS_COUNT - 1)
+                    {
+                        // Show req for next level
+                        DrawRectangleRec(pickaxe_upgrade_button, (Color){90, 90, 90, 255});
+                        DrawText(mining_text, WINDOW_HEIGHT / 2 - 90, 257, 20, WHITE);
+                        DrawRectangleRec(upgrade_secton_info_rec, (Color){60, 60, 60, 255});
+                        const char *pickaxe_upgrade_info_text = TextFormat("Upgrade to level:%i\nCost:\n- %i %s", mining_level + 1, mining_upgrades_requirements[mining_level + 1].amount, mining_upgrades[mining_level + 1].material_name);
+                        DrawText(pickaxe_upgrade_info_text, WINDOW_HEIGHT / 2 + 105, 222, 20, WHITE);
+                    }
+                    else
+                    {
+                        // Display it is max level
+                        DrawRectangleRec(upgrade_secton_info_rec, (Color){60, 60, 60, 255});
+                        const char *pickaxe_upgrade_info_text = TextFormat("Max level!");
+                        DrawText(pickaxe_upgrade_info_text, WINDOW_HEIGHT / 2 + 105, 222, 20, WHITE);
+                    }
                 }
 
                 // Handle buying
@@ -575,6 +586,12 @@ int main()
                     // Handle pickaxe upgrade
                     if (CheckCollisionPointRec(mouse_pos, pickaxe_upgrade_button))
                     {
+                        // Handle buying it
+                        if (mining_level < LEVELS_COUNT - 1 && mining_upgrades_requirements[mining_level + 1].amount <= inventory.amount[mining_upgrades_requirements[mining_level + 1].type])
+                        {
+                            inventory.amount[mining_upgrades_requirements[mining_level + 1].type] -= mining_upgrades_requirements[mining_level + 1].amount;
+                            mining_level++;
+                        }
                     }
                 }
             }
