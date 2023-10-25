@@ -12,6 +12,7 @@
 #define PLAYER_RADIUS (TILE_SIZE / 2)
 #define MAX_POPUPS (short)30 // Overkill, but this is so that you never can overflow the message size :)
 #define POPUP_TIMER_SECONDS (unsigned char)2
+#define WORLD_GRAVITY (unsigned char)1
 
 #pragma region TILES
 typedef enum TILE_TYPE
@@ -120,30 +121,30 @@ Upgrade_Info mining_upgrades[LEVELS_COUNT] = {
     (Upgrade_Info){
         .material_name = "Default",
         .type = UPGRADE_SPEED_MINING,
-        .multiplier = 1,
+        .multiplier = 2,
     },
     (Upgrade_Info){
         .material_name = "Stone",
         .type = UPGRADE_SPEED_MINING,
-        .multiplier = 1.2,
+        .multiplier = 3,
     },
     (Upgrade_Info){
         .material_name = "Coal",
         .type = UPGRADE_SPEED_MINING,
-        .multiplier = 1.4,
+        .multiplier = 4.5f,
     },
     (Upgrade_Info){
         .material_name = "Iron",
         .type = UPGRADE_SPEED_MINING,
-        .multiplier = 1.5,
+        .multiplier = 6,
     },
 };
 
 Upgrade_Requirement_Info mining_upgrades_requirements[LEVELS_COUNT] = {
     (Upgrade_Requirement_Info){},
-    (Upgrade_Requirement_Info){.amount = 50, .type = TILE_FG_STONE},
-    (Upgrade_Requirement_Info){.amount = 20, .type = TILE_FG_COAL},
-    (Upgrade_Requirement_Info){.amount = 50, .type = TILE_FG_IRON},
+    (Upgrade_Requirement_Info){.amount = 30, .type = TILE_FG_STONE},
+    (Upgrade_Requirement_Info){.amount = 40, .type = TILE_FG_COAL},
+    (Upgrade_Requirement_Info){.amount = 40, .type = TILE_FG_IRON},
 };
 
 Upgrade_Info movement_upgrades[LEVELS_COUNT] = {
@@ -155,25 +156,25 @@ Upgrade_Info movement_upgrades[LEVELS_COUNT] = {
     (Upgrade_Info){
         .material_name = "Dirt",
         .type = UPGRADE_SPEED_MOVEMENT,
-        .multiplier = 1.2,
+        .multiplier = 1.4f,
     },
     (Upgrade_Info){
         .material_name = "Stone",
         .type = UPGRADE_SPEED_MOVEMENT,
-        .multiplier = 1.4,
+        .multiplier = 1.8f,
     },
     (Upgrade_Info){
         .material_name = "Iron",
         .type = UPGRADE_SPEED_MOVEMENT,
-        .multiplier = 1.7,
+        .multiplier = 2.2f,
     },
 };
 
 Upgrade_Requirement_Info movement_upgrades_requirements[LEVELS_COUNT] = {
     (Upgrade_Requirement_Info){},
     (Upgrade_Requirement_Info){.amount = 30, .type = TILE_FG_DIRT},
-    (Upgrade_Requirement_Info){.amount = 50, .type = TILE_FG_STONE},
-    (Upgrade_Requirement_Info){.amount = 30, .type = TILE_FG_IRON},
+    (Upgrade_Requirement_Info){.amount = 40, .type = TILE_FG_STONE},
+    (Upgrade_Requirement_Info){.amount = 25, .type = TILE_FG_IRON},
 };
 
 unsigned char mining_level = LEVELS_DEFAULT;
@@ -200,8 +201,6 @@ typedef struct Player
     float x;
     float y;
     short health;
-    short speed_multiplier;
-    short mining_multiplier;
 } Player;
 
 typedef enum DIRECTIONS
@@ -220,6 +219,10 @@ typedef struct Inventory
 
 double timer = 0;
 #pragma endregion PLAYER
+
+#pragma region ENEMY
+
+#pragma endregion ENEMY
 
 #pragma region MAP
 void GenerateOre(Tile map[ROOM_SIZE][ROOM_SIZE], int amount_of_patches, int walks, int steps, TILE_TYPE t)
@@ -418,7 +421,7 @@ int main()
 
     // Initialize the window and cap at 500fps - dont need more!
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Game, with procedural!");
-    SetTargetFPS(500);
+    // SetTargetFPS(500);
 
     // Player hitbox is used in the game-loop
     Rectangle player_hitbox = (Rectangle){p.x - PLAYER_RADIUS * 0.45, p.y - PLAYER_RADIUS * 0.45, TILE_SIZE * 0.9, TILE_SIZE * 0.9};
@@ -650,11 +653,11 @@ int main()
 
         // Input for movement
         Vector2 movement = (Vector2){0, 0};
-        float speed = BASE_PLAYER_SPEED * GetFrameTime() * (IsKeyDown(KEY_LEFT_SHIFT) * 1 + 1);
+        float speed = BASE_PLAYER_SPEED * GetFrameTime() * (IsKeyDown(KEY_LEFT_SHIFT) * 1 + 1) * movement_upgrades[movement_level].multiplier;
         movement.x += IsKeyDown(KEY_D) * speed;
         movement.x -= IsKeyDown(KEY_A) * speed;
-        movement.y += IsKeyDown(KEY_S) * speed;
-        movement.y -= IsKeyDown(KEY_W) * speed;
+        movement.y += WORLD_GRAVITY * BASE_PLAYER_SPEED * GetFrameTime(); // IsKeyDown(KEY_S) * speed; // Gravity
+        movement.y -= IsKeyDown(KEY_W) * speed * 2;                       // To overpower gravity
 
         // Check map and character collision
         bool can_move_x = true;
@@ -677,7 +680,7 @@ int main()
                 {
                     if (CheckCollisionPointRec(player_directional_hitboxes[mining_dir], block))
                     {
-                        map[x][y].hit_points--; //-= GetFrameTime();
+                        map[x][y].hit_points -= mining_upgrades[mining_level].multiplier * GetFrameTime();
                         if (map[x][y].hit_points <= 0)
                         {
                             inventory.amount[map[x][y].type]++;
@@ -792,7 +795,7 @@ int main()
             p.y = 10 * TILE_SIZE;
             portal_pos = (UnsignedChar2){GetRandomValue(0, ROOM_SIZE - 1), GetRandomValue(ROOM_SIZE - 50, ROOM_SIZE - 1)};
             map[portal_pos.x][portal_pos.y] = tiles_info[TILE_PORTAL];
-            printf("new\n");
+            printf("Generated new map!\n");
         }
     }
 
